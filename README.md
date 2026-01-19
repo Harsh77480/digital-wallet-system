@@ -54,14 +54,14 @@ Transaction Service:
 ---
 
 ### 2. Wallet Reservation (Atomic)
-
+```
 BEGIN TRANSACTION  
 validate wallets and balance  
 enforce idempotency  
 reserve amount in sender wallet  
 write WalletReserved event to outbox  
 COMMIT
-
+```
 ---
 
 ### 3. Wallet Outbox Publishing
@@ -73,13 +73,13 @@ A background process reads the outbox table and publishes WalletReserved events 
 ### 4. Ledger Processing (Source of Truth)
 
 Ledger Service consumes WalletReserved events:
-
+```
 BEGIN TRANSACTION  
 if ledger entry already exists: COMMIT and return  
 create debit and credit ledger entries  
 write LedgerSuccess event to outbox  
 COMMIT
-
+```
 Ledger is append-only and owns financial truth.
 
 ---
@@ -114,16 +114,6 @@ Transaction Service is the sole owner of transaction state.
 
 ---
 
-## Technologies Used
-
-- Python 3.11
-- Django + Django REST Framework
-- PostgreSQL (one DB per service)
-- Kafka
-- Docker & Docker Compose
-
----
-
 ## Reliability Patterns
 
 - Event-driven architecture
@@ -131,16 +121,6 @@ Transaction Service is the sole owner of transaction state.
 - Database-backed idempotency
 - At-least-once message delivery
 - Idempotent consumers
-
----
-
-## What Is Intentionally Excluded
-
-- Authentication / Authorization
-- User management
-- Distributed transactions (2PC)
-- Shared databases
-- Celery as Kafka consumer
 
 ---
 
