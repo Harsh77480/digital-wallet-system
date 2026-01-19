@@ -1,0 +1,142 @@
+version: "3.9"
+
+services:
+  # --------------------
+  # Zookeeper
+  # --------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+
+  # --------------------
+  # Kafka
+  # --------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"   
+
+  # --------------------
+  # Databases
+  # --------------------
+  transaction_db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: transaction_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  wallet_db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: wallet_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  ledger_db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ledger_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  # --------------------
+  # Transaction Service
+  # --------------------
+  transaction_service:
+    build: ./transaction_service
+    depends_on:
+      - transaction_db
+      - kafka
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@transaction_db:5432/transaction_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DJANGO_SECRET_KEY: ${transaction_django_secret_key}
+
+    ports:
+      - "8000:8000"
+
+  transaction_consumer:
+    build: ./transaction_service
+    depends_on:
+      - transaction_service
+    command: python manage.py consume_ledger_events
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@transaction_db:5432/transaction_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+  # --------------------
+  # Wallet Service
+  # --------------------
+  wallet-service:
+    build: ./wallet-service
+    depends_on:
+      - wallet_db
+      - kafka
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@wallet_db:5432/wallet_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DJANGO_SECRET_KEY: ${wallet_django_secret_key}
+    ports:
+      - "8001:8000"
+
+  wallet_outbox:
+    build: ./wallet-service
+    command: python manage.py publish_outbox
+    depends_on:
+      - wallet-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@wallet_db:5432/wallet_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+  wallet_consumer:
+    build: ./wallet-service
+    command: python manage.py consume_ledger_events
+    depends_on:
+      - wallet-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@wallet_db:5432/wallet_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+  # --------------------
+  # Ledger Service
+  # --------------------
+  ledger_service:
+    build: ./ledger_service
+    depends_on:
+      - ledger_db
+      - kafka
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@ledger_db:5432/ledger_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DJANGO_SECRET_KEY: ${ledger_django_secret_key}
+
+  ledger_consumer:
+    build: ./ledger_service
+    command: python manage.py consume_wallet_events
+    depends_on:
+      - ledger_service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@ledger_db:5432/ledger_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+  ledger_outbox:
+    build: ./ledger_service
+    command: python manage.py publish_outbox
+    depends_on:
+      - ledger_service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@ledger_db:5432/ledger_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092

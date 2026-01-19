@@ -1,0 +1,35 @@
+# Personal 
+Notes.md
+myscript.bat
+db.bat
+
+# Python
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+
+# Django
+.env
+.env.*
+staticfiles/
+media/
+
+# Virtualenv
+venv/
+.env/
+
+# Docker
+*.pid
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Kafka / Zookeeper data (if mounted later)
+kafka-data/
+zookeeper-data/
