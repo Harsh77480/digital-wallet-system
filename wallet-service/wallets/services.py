@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from .models import Wallet, WalletReservation, OutboxEvent
 
 
-@transaction.atomic
 def reserve_funds(*, wallet_id, transaction_id, amount, target_wallet_id):
     # Idempotency check
     if WalletReservation.objects.filter(
@@ -22,7 +21,7 @@ def reserve_funds(*, wallet_id, transaction_id, amount, target_wallet_id):
 
     print("Wallet before reservation:", wallet)
     if wallet.available_balance < amount:
-        raise ValidationError("Insufficient balance")
+        raise ValidationError("Insufficient balance") # this will trigger the except block in the view and return 400 to transaction service, which will mark the transaction as failed.
 
     wallet.available_balance -= amount
     wallet.reserved_balance += amount

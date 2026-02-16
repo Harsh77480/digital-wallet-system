@@ -5,22 +5,22 @@ from rest_framework import status
 
 from .serializers import ReserveSerializer
 from  .services  import reserve_funds
-
+from django.db import transaction
 
 class HealthView(APIView):
     def get(self, request):
         return Response({"ok": True})
 
-class ReserveFundsView(APIView):
+class ReserveFundsView(APIView): # called synchronously from transaction service when a transfer is initiated. 
     def post(self, request):
-        serializer = ReserveSerializer(data=request.data)
+        try : 
+            serializer = ReserveSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True) 
+            print("ReserveFundsView - valid data:", serializer.validated_data)  # IMPORTANT
+            with transaction.atomic(): 
+                reserve_funds(**serializer.validated_data) # if reserve_funds raises an exception, the transaction will be rolled back and also it will trigger the except block. 
 
-        if not serializer.is_valid():
-            print(serializer.errors)   # IMPORTANT
+            return Response(status=status.HTTP_200_OK)
+        except Exception as e : 
             return Response(serializer.errors, status=400)
-        
-        print("ReserveFundsView - valid data:", serializer.validated_data)  # IMPORTANT
-        reserve_funds(**serializer.validated_data)
-
-        return Response(status=status.HTTP_200_OK)
 
