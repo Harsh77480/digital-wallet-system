@@ -27,7 +27,7 @@ class Command(BaseCommand):
             }
         )
 
-        consumer.subscribe([settings.WALLET_EVENTS_TOPIC])
+        consumer.subscribe([settings.WALLET_EVENTS_TOPIC]) # wallet.events 
 
         while True:
             msg = consumer.poll(1.0)
@@ -39,7 +39,8 @@ class Command(BaseCommand):
 
             self.process_message(msg)
             consumer.commit(msg)
-
+            
+    @transaction.atomic 
     def process_message(self, msg):
         data = json.loads(msg.value().decode())
 
