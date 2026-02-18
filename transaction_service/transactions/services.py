@@ -4,7 +4,7 @@ from django.conf import settings
 from transactions.models import TransactionStatus
 
 
-def initiate_transfer(tx):
+def initiate_transfer(tx): # calling wallet service synchronously to check balance and reserve money, this is an optimization to fail fast.
     r = requests.post(
         f"{settings.WALLET_SERVICE_BASE_URL}/reserve",
         json={
