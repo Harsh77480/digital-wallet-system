@@ -43,7 +43,9 @@ class Command(BaseCommand):
     def publish_event(self, producer, event: OutboxEvent):
         payload = json.dumps(event.payload)
         print("Publishing wallet outbox event", event.id, "with payload", payload)
-        def delivery_report(err, msg):
+
+        # Callback to handle delivery report from Kafka 
+        def delivery_report(err, msg): 
             if err:
                 raise RuntimeError(f"Kafka delivery failed: {err}")
 

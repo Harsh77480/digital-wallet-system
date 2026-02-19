@@ -17,9 +17,7 @@ class ReserveFundsView(APIView): # called synchronously from transaction service
             serializer = ReserveSerializer(data=request.data)
             serializer.is_valid(raise_exception=True) 
             print("ReserveFundsView - valid data:", serializer.validated_data)  # IMPORTANT
-            with transaction.atomic(): 
-                reserve_funds(**serializer.validated_data) # if reserve_funds raises an exception, the transaction will be rolled back and also it will trigger the except block. 
-
+            reserve_funds(**serializer.validated_data) # if reserve_funds raises an exception, the transaction will be rolled back and also it will trigger the except block. 
             return Response(status=status.HTTP_200_OK)
         except Exception as e : 
             return Response(serializer.errors, status=400)
