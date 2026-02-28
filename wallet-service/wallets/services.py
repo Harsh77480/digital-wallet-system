@@ -2,12 +2,12 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from .models import Wallet, WalletReservation, OutboxEvent
+from .models import Wallet, WalletReservation, OutboxEvent, WalletFinalization
 
-
+@transaction.atomic
 def reserve_funds(*, wallet_id, transaction_id, amount, target_wallet_id):
     # Idempotency check
-    if WalletReservation.objects.filter(
+    if WalletReservation.objects.filter( # WalletReservation handles idempotency for reserve_funds. Also handles reservation state for finalize_success and finalize_failure.
         transaction_id=transaction_id
     ).exists():
         print("Reservation already exists for transaction", transaction_id)
@@ -34,8 +34,8 @@ def reserve_funds(*, wallet_id, transaction_id, amount, target_wallet_id):
         amount=amount,
     )
 
-    print("Creating outbox event for transaction", transaction_id)
-    OutboxEvent.objects.create(
+    print("Creating outbox event for transaction", transaction_id) # Start of async process. 
+    OutboxEvent.objects.create( # BY default, the outbox event is created with published=False, management command picks up unpublished events and to the payload to message broker.
         event_type="WALLET_RESERVED",
         payload={
             "transaction_id": str(transaction_id),
@@ -45,18 +45,11 @@ def reserve_funds(*, wallet_id, transaction_id, amount, target_wallet_id):
     )
 
 
-# wallets/services.py
-from django.db import transaction
-
-from wallets.models import (
-    Wallet,
-    WalletReservation,
-    WalletFinalization,
-)
 
 
+# excecutes later.
 @transaction.atomic
-def finalize_success(*, transaction_id):
+def finalize_success(*, transaction_id): 
     if WalletFinalization.objects.filter(
         transaction_id=transaction_id
     ).exists():

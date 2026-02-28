@@ -10,10 +10,10 @@ from transactions.services import initiate_transfer
 class TransferView(APIView):
     def post(self, request):
 
-        serializer = TransferSerializer(data=request.data)
+        serializer = TransferSerializer(data=request.data) # checkout the serializer before initiate_transfer().
         serializer.is_valid(raise_exception=True)
         transaction = serializer.save()
-        initiate_transfer(transaction)
+        initiate_transfer(transaction) # 
 
         return Response(
             {

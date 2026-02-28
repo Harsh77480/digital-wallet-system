@@ -86,7 +86,7 @@ outbox events are checked in every 1s gap. If found "WALLET_RESERVED" topic is p
 ledger consumes "WALLET_RESERVED". Atomically updates ledger and creates outbox events (to publish success)
 
 `ledger_service\ledger\management\commands\consume_wallet_events.py`
-`ledger_service\ledger\management\commands\publish_outbox.py`
+`ledger_service\ledger\management\commands\publish_outbox.py` 
 
 wallet and transaction service consumes "ledger.events" topics "LEDGER_SUCCESS" and "LEDGER_FAILURE"
 

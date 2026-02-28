@@ -18,9 +18,10 @@ class Command(BaseCommand):
             {
                 "bootstrap.servers": settings.KAFKA_BOOTSTRAP_SERVERS,
                 "acks": "all",
-                "linger.ms": 5,
+                "linger.ms": 5,   # "Wait up to 5 milliseconds before actually sending the message over the network.". It acts like a bus waiting at a stop. Instead of sending 10 separate network requests for 10 wallet transactions that happened almost instantly, the producer waits 5 milliseconds, groups all 10 transactions into a single "batch", and sends them in one go.
             }
         )
+        
 
         while True:
             events = (
@@ -49,7 +50,7 @@ class Command(BaseCommand):
         def delivery_report(err, msg):
             if err:
                 raise RuntimeError(f"Kafka delivery failed: {err}")
-
+            
             OutboxEvent.objects.filter(id=event.id).update(published=True)
 
         producer.produce(
